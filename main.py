@@ -16,7 +16,7 @@ class AIOKeyboardAdapter:
         self.config = config
         self.keyboard = pynput.keyboard.Controller()
     
-    def get_binding_by_sensor_index(self, index) -> Binding:
+    def get_binding_by_sensor_index(self, index, is_pressed) -> Binding:
         bindings = self.config.get('bindings', [])
 
         def find_by_index():
@@ -37,7 +37,11 @@ class AIOKeyboardAdapter:
         if isinstance(result, str):
             return self.Binding(result, auto_release_default)
 
-        return self.Binding(result['key'], result.get('auto_release', auto_release_default))
+        try:
+            key = result['press' if is_pressed else 'release']
+        except KeyError:
+            return None
+        return self.Binding(key, result.get('auto_release', auto_release_default))
 
     async def connect(self):
         scanner = bleak.BleakScanner()
@@ -63,16 +67,23 @@ class AIOKeyboardAdapter:
                     is_pressed = bits == 0b01
                     pin_index = byte_index * 4 + int(bit_index / 2)
                     print(f'Pin {pin_index} is pressed: {is_pressed}')
-                    binding = self.get_binding_by_sensor_index(pin_index)
-                    if binding is None:
-                        print('no binding specified for pin')
-                        return
+                    binding = self.get_binding_by_sensor_index(pin_index, is_pressed)
+                    binding_pressed = self.get_binding_by_sensor_index(pin_index, True)
                     if is_pressed:
+                        if binding is None:
+                            print('no binding specified for pin')
+                            return
                         self.keyboard.press(binding.key)
                         if binding.auto_release:
                             self.keyboard.release(binding.key)
-                    elif not binding.auto_release:
-                        self.keyboard.release(binding.key)
+                    else:
+                        if not binding_pressed.auto_release:
+                            if binding is not None:
+                                raise RuntimeError('Cannot specify press.auto_release=False and release binding at the same time')
+                            self.keyboard.release(binding_pressed.key)
+                            return
+                        self.keyboard.tap(binding.key)
+                            
         await self.client.start_notify(input_characteristic, handle_input)
         print('waiting for notifications')
         await asyncio.Future()
