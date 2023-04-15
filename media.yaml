@@ -1,0 +1,6 @@
+---
+name: 'BIG RED BUTTON'
+address: 'DA:8A:1C:4C:C7:96'
+bindings:
+  - press: 0xB3 # play/pause key
+    release: 0xB3 # play/pause key

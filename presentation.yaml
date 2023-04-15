@@ -1,0 +1,5 @@
+---
+name: 'BIG RED BUTTON'
+address: 'DA:8A:1C:4C:C7:96'
+bindings:
+  - release: 0x27 # right arrow key
