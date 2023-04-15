@@ -9,7 +9,7 @@ import sys
 class AIOKeyboardAdapter:
     @dataclasses.dataclass
     class Binding():
-        key: int|str
+        key: any
         auto_release: bool
 
 
@@ -72,12 +72,12 @@ class AIOKeyboardAdapter:
             disconnect_event.set()
         
         if address is not None and not is_mac:
-            self.client = bleak.BleakClient(address)
+            self.client = bleak.BleakClient(address, on_disconnect)
         elif name is not None:
             print('scanning...')
             scanner = bleak.BleakScanner()
             device = await scanner.find_device_by_name(self.config['name'], 60)
-            self.client = bleak.BleakClient(device)
+            self.client = bleak.BleakClient(device, on_disconnect)
 
         while True:
             await client_connect(self.client)
@@ -123,7 +123,8 @@ class AIOKeyboardAdapter:
                                 
             await self.client.start_notify(input_characteristic, handle_input)
             print('waiting for notifications')
-            await disconnect_event
+            disconnect_event.clear()
+            await disconnect_event.wait()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
