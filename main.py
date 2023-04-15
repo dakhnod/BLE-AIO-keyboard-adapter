@@ -39,16 +39,22 @@ class AIOKeyboardAdapter:
 
         try:
             key = result['press' if is_pressed else 'release']
+            if isinstance(key, int):
+                key = pynput.keyboard.KeyCode(key)
         except KeyError:
             return None
         return self.Binding(key, result.get('auto_release', auto_release_default))
 
     async def connect(self):
         scanner = bleak.BleakScanner()
+        print('scanning...')
         device = await scanner.find_device_by_name(self.config['name'], 60)
+        print('connecting...')
 
         self.client = bleak.BleakClient(device)
         await self.client.connect()
+
+        print('connected.')
 
         io_service = self.client.services['00001815-0000-1000-8000-00805f9b34fb']
         for characteristic in io_service.characteristics:
