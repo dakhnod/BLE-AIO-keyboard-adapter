@@ -49,7 +49,7 @@ class AIOKeyboardAdapter:
     async def connect(self):
         name = self.config.get('name')
         address = self.config.get('address')
-        is_mac = sys.platform == 'Darwin'
+        is_mac = sys.platform == 'darwin'
 
         disconnect_event = asyncio.Event()
 
@@ -77,6 +77,7 @@ class AIOKeyboardAdapter:
             print('scanning...')
             scanner = bleak.BleakScanner()
             device = await scanner.find_device_by_name(self.config['name'], 60)
+            print('device found')
             self.client = bleak.BleakClient(device, on_disconnect)
 
         while True:
@@ -89,6 +90,7 @@ class AIOKeyboardAdapter:
                     break
             else:
                 raise RuntimeError('Input IO characteristic not found')
+            
             def handle_input(characteristic, data):
                 print(characteristic, data)
                 for byte_index in range(len(data)):
@@ -117,6 +119,9 @@ class AIOKeyboardAdapter:
                                 
                                 print(f'releasing key {binding.key}')
                                 self.keyboard.release(binding_pressed.key)
+                                return
+                            if binding is None:
+                                print('no key specified for release')
                                 return
                             print(f'taping key {binding.key}')
                             self.keyboard.tap(binding.key)
