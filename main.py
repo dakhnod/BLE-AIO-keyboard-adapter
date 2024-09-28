@@ -125,7 +125,12 @@ class AIOKeyboardAdapter:
                                 return
                             print(f'taping key {binding.key}')
                             self.keyboard.tap(binding.key)
-                                
+            try:
+                # fix for macOS
+                await self.client.stop_notify(input_characteristic)
+            except:
+                print('failed unsubscribing to characteristic')
+
             await self.client.start_notify(input_characteristic, handle_input)
             print('waiting for notifications')
             disconnect_event.clear()
