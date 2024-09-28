@@ -1,0 +1,5 @@
+---
+name: 'Weird ball thing'
+address: 'DA:8A:1C:4C:C7:96'
+bindings:
+  - press: 124 # right arrow key
