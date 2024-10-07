@@ -56,12 +56,12 @@ class AIOKeyboardAdapter:
         if is_mac and name is None:
             raise RuntimeError('can only connect by device name on mac')
         
-        async def client_connect(client):
+        async def client_connect():
             while True:
                 try:
                     print('connecting...', end='')
-                    await client.connect()
-                    print('success')
+                    await self.client.connect()
+                    print('success.')
                     break
                 except:
                     print('failed')
@@ -70,18 +70,20 @@ class AIOKeyboardAdapter:
         def on_disconnect(client):
             print('client disconnected :(')
             disconnect_event.set()
-        
-        if address is not None and not is_mac:
-            self.client = bleak.BleakClient(address, on_disconnect)
-        elif name is not None:
-            print('scanning...')
-            scanner = bleak.BleakScanner()
-            device = await scanner.find_device_by_name(self.config['name'], 60)
-            print('device found')
-            self.client = bleak.BleakClient(device, on_disconnect)
 
         while True:
-            await client_connect(self.client)
+            if address is not None and not is_mac:
+                self.client = bleak.BleakClient(address, on_disconnect)
+            elif name is not None:
+                print('scanning...')
+                scanner = bleak.BleakScanner()
+                self.client = bleak.BleakClient(
+                    await scanner.find_device_by_name(self.config['name'], 60000),
+                    on_disconnect
+                )
+                print('device found')
+            
+            await client_connect()
 
             io_service = self.client.services['00001815-0000-1000-8000-00805f9b34fb']
             for characteristic in io_service.characteristics:
@@ -125,11 +127,6 @@ class AIOKeyboardAdapter:
                                 return
                             print(f'taping key {binding.key}')
                             self.keyboard.tap(binding.key)
-            try:
-                # fix for macOS
-                await self.client.stop_notify(input_characteristic)
-            except:
-                print('failed unsubscribing to characteristic')
 
             await self.client.start_notify(input_characteristic, handle_input)
             print('waiting for notifications')

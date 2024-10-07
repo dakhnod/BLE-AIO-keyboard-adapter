@@ -1,0 +1,4 @@
+bleak
+pyyaml
+argparse
+pynput
